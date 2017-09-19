@@ -36,18 +36,18 @@ void setup() {
 void loop() {
   // read the analog in value:
   sensorValue = analogRead(analogInPin);
+  int buttonValue = digitalRead(8);
   // map it to the range of the analog out:
-  outputValue = map(sensorValue, 0, 1023, 0, 255);
+///  outputValue = map(sensorValue, 0, 1023, 0, 255);
   // change the analog out value:
   analogWrite(analogOutPin, outputValue);
-  dis = 7020.4 / (sensorValue - 113.58);
   // print the results to the Serial Monitor:
-  Serial.print(" sensor = ");
-  Serial.print(sensorValue);
-  Serial.print("\t output = ");
-  Serial.print(outputValue);
-  Serial.print(" dis =  ");
-  Serial.println(dis);
+///  Serial.print(" sensor = ");
+//  S/erial.print(sensorValue);
+//  Seri/al.print("\t output = ");
+  Serial.println(sensorValue);
+//  Serial./print(" dis =  ");
+//  Serial.pri/ntln(dis);
  
 
   // wait 2 milliseconds before the next loop for the analog-to-digital
