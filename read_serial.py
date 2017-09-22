@@ -2,8 +2,10 @@ from serial import Serial, SerialException
 import time
 import string
 import matplotlib.pyplot as plt
+import numpy as np
 
 ser = Serial('/dev/ttyACM0', baudrate=9600)
+distances = [8,13,18,23,28,33,38,43,48,53,58]
 
 def clear_data():
     open('data', 'w').close()
@@ -35,31 +37,58 @@ def plot_data():
 
     plt.savefig('example.png')
 
-def gather_data():
-    while(True):
+def gather_data(count):
+    while(count != 11):
         print "Sensing..."
         t0 = time.time()
         num_elements = 0
         dist = 0
-        while((time.time() - t0) <= 5000):
+        while((time.time() - t0) <= 5):
             if ser.in_waiting > 1:
-                line = ser.readline()
-                if(line == int):
-                    print "hello"
-                # if(line != ""):
-                #     print ser.readline()
-                # dist += int(ser.readline())
-                # num_elements += 1
+                line = ser.readline().strip()
+                try:
+                    if(type(int(line)) == int):
+                        dist += int(line)
+                        num_elements += 1
+                except ValueError:
+                    print "Invalid value given"
+                # if(type(int(line)) == 'int'):
+                #     dist += int(line)
+                #     num_elements += 1
         dist = dist/num_elements
         file = open('data', 'a')
-        file.write(dist)
+        file.write(str(dist)+"\n")
         file.close()
         print "Move object..."
-        sleep(3)
+        time.sleep(3)
+        count += 1
+
+def find_calibration():
+    for num in distances:
+        num = num*0.0254
+    file = open('data', 'r')
+    points = []
+    for line in file:
+        ins = line.split('\n')
+        points.append(int(ins[0]))
+    print points
+    z = np.polyfit(points, distances, 1)
+    return z
+
+def calc_dist(voltage, z):
+    dist = z[0]/(voltage-z[1])
+    return dist
+
 
 if __name__ == "__main__":
+    # Collect Data
     # clear_data()
-    read_data()
-    # print_data()
-    # plot_data()
-    # gather_data()
+    # count = 0
+    # gather_data(count)
+
+    # print y
+    # Print equations
+    z = find_calibration()
+    print 'y = ' + str(z[0]) + 'x + ' + str(z[1])
+    v = input("What is the voltage: ")
+    print calc_dist(v, z)
