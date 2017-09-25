@@ -8,7 +8,7 @@ import numpy as np
 import numpy.random
 import termios
 
-ser = Serial('/dev/ttyACM1', baudrate=9600)
+# ser = Serial('/dev/ttyACM1', baudrate=9600)
 # distances = [8,13,18,23,28,33,38,43,48,53,58]
 distances = [58,53,48,43,38,33,28,23,18,13,8]
 r = 0.04327906      # arm radius (m)
@@ -150,7 +150,7 @@ def calc_true_dist(voltage, z):
     This function uses the calibration data to calculate the true distance
     read by the sensor
     '''
-    dist = -int((z[0]*float(int(voltage)^2) + z[1]*float(int(voltage)) + z[2]))
+    dist = -float((z[0]*float(int(voltage)^2) + z[1]*float(int(voltage)) + z[2]))
     # dist = z[0]/(voltage-z[1])
     return dist
 
@@ -158,32 +158,49 @@ def calc_servo_x(tilt_angle):
     '''
     This function returns the calculated x distance from the servo
     '''
-    return int(np.cos((180/np.pi)*tilt_angle-(180/np.pi)*135)*r)
+    for i in tilt_angle:
+        i = float(float(np.cos((180/np.pi)*i-(180/np.pi)*135))*r)
+    return tilt_angle
 
 def calc_servo_z(tilt_angle):
     '''
     This function returns the calculated z distance from the servo
     '''
-    return int(np.sin((180/np.pi)*tilt_angle-(180/np.pi)*135)*r)
+    for i in tilt_angle:
+        i = int(float(np.sin((180/np.pi)*i-(180/np.pi)*135))*r)
+    return tilt_angle
 
 def calc_distances(tilt_angle, turn_angle, sensor_data):
     '''
     This function returns a tuple with the x, y, and z positions from the data
     '''
-    for item in range(0,len(tilt_angle)-1):
-        tilt_angle[item] = int(item)
-
-    for item in range(0,len(turn_angle)-1):
-        turn_angle[item] = int(item)
-
-    for item in range(0, len(sensor_data)-1):
-        sensor_data[item] = int(item)
+    # for item in range(0,len(tilt_angle)-1):
+    #     tilt_angle[item] = int(item)
+    #
+    # for item in range(0,len(turn_angle)-1):
+    #     turn_angle[item] = int(item)
+    #
+    # for item in range(0, len(sensor_data)-1):
+    #     sensor_data[item] = int(item)
 
     servo_x = calc_servo_x(tilt_angle)
-    i = (servo_x + sensor_data)*np.cos(np.pi-(180/np.pi)*turn_angle)
-    j = (servo_x + sensor_data)*np.sin((180/np.pi)*tilt_angle-(180/np.pi)*135)
-    k = (servo_x + sensor_data)*np.cos((180/np.pi)*tilt_angle-(180/np.pi)*135)
-    return i, j, k
+    print type(sensor_data)
+    print type(turn_angle)
+    #cry = float(np.cos(np.pi-(180/np.pi)))
+    #lul = float(np.cos(np.pi-(180/np.pi)))*turn_angle
+    i_dist = []
+    j_dist = []
+    k_dist = []
+    for i in range(0,len(servo_x)-1):
+        i_dist.append(servo_x[i] + sensor_data[i] *float(np.cos(np.pi-(180/np.pi)))*turn_angle[i])
+
+    for i in range(0,len(servo_x)-1):
+        j_dist.append(servo_x[i] + sensor_data[i] *float(np.sin((180/np.pi))*tilt_angle[i]-(180/np.pi)*135))
+
+    for i in range(0,len(servo_x)-1):
+        k_dist.append(servo_x[i] + sensor_data[i] *float(np.cos((180/np.pi))*tilt_angle[i]-(180/np.pi)*135))
+
+    return i_dist, j_dist, k_dist
 
 def run_program(z):
     tilt_angle, turn_angle, sensor_data = process_data(z)
@@ -192,6 +209,20 @@ def run_program(z):
     #sensor_data = int(sensor_data)
     x, y, z = calc_distances(tilt_angle, turn_angle, sensor_data)
     gen_plot(x, y, z)
+
+def parce_file(z):
+    tilt_angle = []
+    turn_angle = []
+    sensor_data = []
+    file = open('image', 'r')
+    for line in file:
+        parts = line.split("'")
+        elements = parts[1].split(",")
+        if(len(elements) == 3):
+            tilt_angle.append(float(elements[0]))
+            turn_angle.append(float(elements[1]))
+            sensor_data.append(calc_true_dist(float(elements[2]), z))
+    return tilt_angle, turn_angle, sensor_data
 
 if __name__ == "__main__":
     # Collect Data
@@ -209,30 +240,14 @@ if __name__ == "__main__":
     #
     # ser = Serial(path, 9600)
 
-    '''
-    while(True):
-        try:
-            cmd_id = int(raw_input("Please enter a command ID (1 - read potentiometer, 2 - read the button: "))
-        if int(cmd_id) > 2 or int(cmd_id) < 1:
-            print "Values other than 1 or 2 are ignored."
-        else:
-            ser.write([int(cmd_id)])
-            while ser.inWaiting() < 1:
-                pass
-            result = ser.readline()
-            print result
-    except ValueError:
-        print "You must enter an integer value between 1 and 2."
-    '''
-
 
     z = find_calibration()
-    i = input('Press 1 to start...')
-    if(i == 1):
-        print "Starting"
-        ser.write(int(i))
-        run_program(z)
-        ser.write(int(0))
+    # i = input('Press 1 to start...')
+    # if(i == 1):
+    #     print "Starting"
+    #     ser.write(int(i))
+    #     run_program(z)
+    #     ser.write(int(0))
 
 
 
@@ -248,5 +263,6 @@ if __name__ == "__main__":
 
     # Generate random data and plot it
     # tilt_angle, turn_angle, sensor_data = process_data(z)
-    # x, y, z = calc_distances(tilt_angle, turn_angle, sensor_data)
-    # gen_plot(x, y, z)
+    tilt_angle, turn_angle, sensor_data = parce_file(z)
+    x, y, z = calc_distances(tilt_angle, turn_angle, sensor_data)
+    gen_plot(x, y, z)

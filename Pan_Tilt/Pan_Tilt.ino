@@ -23,12 +23,15 @@ void setup()
  
 void loop() 
 {
-  if(Serial.available() >= 0 ) {
-    int incoming = Serial.read();
-    if(incoming == 1) {
+  /*if(Serial.available() >= 0 ) {
+    if (Serial.read() == "1")
+    if(incoming == "1") {
       Start_fn();
     }
-  }
+  }*/
+
+  while(!Serial.available()) {}
+  Start_fn();
 }
 
 void Start_fn()
@@ -47,7 +50,7 @@ for(pos_tilt = 110; pos_tilt < 140; pos_tilt += 1)  // goes from 0 degrees to 18
   Serial.print(",");
   Serial.print(pos_turn);
   Serial.print(",");
-  Serial.print(val);  
+  Serial.print(val);
   Serial.println("");
       // waits 15ms for the servo to reach the position 
 } 
@@ -61,7 +64,7 @@ for(pos_tilt = 110; pos_tilt < 140; pos_tilt += 1)  // goes from 0 degrees to 18
     Serial.print(",");
     Serial.print(pos_turn);
     Serial.print(",");
-    Serial.print(val);
+    Serial.print(val); 
     Serial.println("");
   } 
   pos_turn = pos_turn +1;
