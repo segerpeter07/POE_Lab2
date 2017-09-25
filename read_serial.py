@@ -11,6 +11,11 @@ import termios
 # ser = Serial('/dev/ttyACM1', baudrate=9600)
 # distances = [8,13,18,23,28,33,38,43,48,53,58]
 distances = [58,53,48,43,38,33,28,23,18,13,8]
+
+dist = []
+for el in distances:
+    dist.append(1.0/float(el))
+
 r = 0.04327906      # arm radius (m)
 
 
@@ -39,7 +44,7 @@ def gen_plot(x, y, z):
     x and y values.
     '''
     # Create heatmap
-    heatmap, xedges, yedges = np.histogram2d(x, y, bins=(64,64), weights=z)
+    heatmap, xedges, yedges = np.histogram2d(x, y, bins=(128,128), weights=z)
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 
     # Plot graph
@@ -63,7 +68,7 @@ def process_data(z):
         if ser.inWaiting >= 1:
             line = ser.readline()
             data.append(line)
-            print line
+            #print line
             # data = line.split(' - ')
             # tilt_angle.append(data[0])
             # turn_angle.append(data[1])
@@ -106,23 +111,24 @@ def gather_calibration_data(count):
         count += 1
 
 def plot_calibration():
-    x = distances
-    y = []
+    y = distances
+    vol = []
     file = open('data', 'r')
     for line in file:
         if(type(int(line)) == int):
-            y.append(line)
+            vol.append(line)
     area = 20
     colors = (0,0,0)
-    plt.scatter(x, y, s=area, c=colors)
+    plt.clf()
+    plt.scatter(dist, vol, s=area, c=colors)
     plt.title('Calibration Data')
     plt.show()
 
 def plot_calibration_linear(z):
-    x = range(0,100)
-    y = []
-    for item in x:
-        y.append(calc_true_dist(item, z))
+    y = range(0,100)
+    x = []
+    for item in y:
+        x.append(calc_true_dist(item, z))
     area = 6
     colors = (0,0,0)
     plt.scatter(x, y, s=area, c=colors)
@@ -135,22 +141,31 @@ def find_calibration():
     This function performs a linear regression on the calibration data and sets
     z to be the equation of the data
     '''
-    for num in distances:
-        num = num*0.0254
+    # for num in distances:
+    #     num = num*0.0254
     file = open('data', 'r')
     points = []
     for line in file:
         ins = line.split('\n')
         points.append(int(ins[0]))
-    z = np.polyfit(points, distances, 2)
+    z = np.polyfit(dist, points, 2)
     return z
+
+# def calc_true_dist(voltage, z):
+#     '''
+#     This function uses the calibration data to calculate the true distance
+#     read by the sensor
+#     '''
+#     dist = -float((z[0]*float(int(voltage)^2) + z[1]*float(int(voltage)) + z[2]))
+#     # dist = z[0]/(voltage-z[1])
+#     return dist
 
 def calc_true_dist(voltage, z):
     '''
     This function uses the calibration data to calculate the true distance
     read by the sensor
     '''
-    dist = -float((z[0]*float(int(voltage)^2) + z[1]*float(int(voltage)) + z[2]))
+    dist = 0.01 * float((6787/(voltage-3))-4)
     # dist = z[0]/(voltage-z[1])
     return dist
 
@@ -159,7 +174,7 @@ def calc_servo_x(tilt_angle):
     This function returns the calculated x distance from the servo
     '''
     for i in tilt_angle:
-        i = float(float(np.cos((180/np.pi)*i-(180/np.pi)*135))*r)
+        i = float(float(np.cos((np.pi/180)*i-(np.pi/180)*135))*r)
     return tilt_angle
 
 def calc_servo_z(tilt_angle):
@@ -167,7 +182,7 @@ def calc_servo_z(tilt_angle):
     This function returns the calculated z distance from the servo
     '''
     for i in tilt_angle:
-        i = int(float(np.sin((180/np.pi)*i-(180/np.pi)*135))*r)
+        i = int(float(np.sin((np.pi/180)*i-(np.pi/180)*135))*r)
     return tilt_angle
 
 def calc_distances(tilt_angle, turn_angle, sensor_data):
@@ -184,23 +199,36 @@ def calc_distances(tilt_angle, turn_angle, sensor_data):
     #     sensor_data[item] = int(item)
 
     servo_x = calc_servo_x(tilt_angle)
-    print type(sensor_data)
-    print type(turn_angle)
+    print type(sensor_data[6])
+    print type(turn_angle[0])
+    print type(tilt_angle[0])
     #cry = float(np.cos(np.pi-(180/np.pi)))
     #lul = float(np.cos(np.pi-(180/np.pi)))*turn_angle
-    i_dist = []
-    j_dist = []
-    k_dist = []
-    for i in range(0,len(servo_x)-1):
-        i_dist.append(servo_x[i] + sensor_data[i] *float(np.cos(np.pi-(180/np.pi)))*turn_angle[i])
+    x_dist = []
+    y_dist = []
+    z_dist = []
+    h = 0.05011     # height from sensor to base
+    l = 0.22202     # dist from sensor to middle of plate
+    # for i in range(0,len(servo_x)-1):
+    #     i_dist.append(servo_x[i] + sensor_data[i] *float(np.cos(np.pi-(np.pi/180)))*turn_angle[i])
+    #
+    # for i in range(0,len(servo_x)-1):
+    #     j_dist.append(servo_x[i] + sensor_data[i] *float(np.sin((np.pi/180))*tilt_angle[i]-(np.pi/180)*135))
+    #
+    # for i in range(0,len(servo_x)-1):
+    #     k_dist.append(servo_x[i] + sensor_data[i] *float(np.cos((np.pi/180))*tilt_angle[i]-(np.pi/180)*135))
 
-    for i in range(0,len(servo_x)-1):
-        j_dist.append(servo_x[i] + sensor_data[i] *float(np.sin((180/np.pi))*tilt_angle[i]-(180/np.pi)*135))
+    for i in range(0,len(servo_x)-60):
+        z_dist.append(h - (sensor_data[i])*(np.sin(tilt_angle[i]*(np.pi/180.0)-135.0*(np.pi/180.0))))
 
-    for i in range(0,len(servo_x)-1):
-        k_dist.append(servo_x[i] + sensor_data[i] *float(np.cos((180/np.pi))*tilt_angle[i]-(180/np.pi)*135))
+    for i in range(0,len(servo_x)-60):
+        x_dist.append((l - ((sensor_data[i])*np.cos(tilt_angle[i]*(np.pi/180.0))-135.0*(np.pi/180.0)))*np.cos(turn_angle[i]*(np.pi/180.0)))
 
-    return i_dist, j_dist, k_dist
+    for i in range(0,len(servo_x)-60):
+        y_dist.append((l - ((sensor_data[i])*np.cos(tilt_angle[i]*(np.pi/180.0))-135.0*(np.pi/180.0)))*np.sin(turn_angle[i]*(np.pi/180.0)))
+
+
+    return x_dist, y_dist, z_dist
 
 def run_program(z):
     tilt_angle, turn_angle, sensor_data = process_data(z)
@@ -242,13 +270,14 @@ if __name__ == "__main__":
 
 
     z = find_calibration()
+    # print z
     # i = input('Press 1 to start...')
     # if(i == 1):
     #     print "Starting"
     #     ser.write(int(i))
     #     run_program(z)
     #     ser.write(int(0))
-
+    # print calc_true_dist('200',z)
 
 
     # Print equations
@@ -265,4 +294,5 @@ if __name__ == "__main__":
     # tilt_angle, turn_angle, sensor_data = process_data(z)
     tilt_angle, turn_angle, sensor_data = parce_file(z)
     x, y, z = calc_distances(tilt_angle, turn_angle, sensor_data)
+    print z
     gen_plot(x, y, z)
