@@ -7,6 +7,7 @@ from scipy.stats import linregress
 import numpy as np
 import numpy.random
 import termios
+from mpl_toolkits.mplot3d import Axes3D
 
 # ser = Serial('/dev/ttyACM1', baudrate=9600)
 # distances = [8,13,18,23,28,33,38,43,48,53,58]
@@ -238,11 +239,11 @@ def run_program(z):
     x, y, z = calc_distances(tilt_angle, turn_angle, sensor_data)
     gen_plot(x, y, z)
 
-def parce_file(z):
+def parce_file(z, filename):
     tilt_angle = []
     turn_angle = []
     sensor_data = []
-    file = open('image', 'r')
+    file = open(filename, 'r')
     for line in file:
         parts = line.split("'")
         elements = parts[1].split(",")
@@ -292,7 +293,11 @@ if __name__ == "__main__":
 
     # Generate random data and plot it
     # tilt_angle, turn_angle, sensor_data = process_data(z)
-    tilt_angle, turn_angle, sensor_data = parce_file(z)
+    tilt_angle, turn_angle, sensor_data = parce_file(z, "try2")
     x, y, z = calc_distances(tilt_angle, turn_angle, sensor_data)
     print z
-    gen_plot(x, y, z)
+    #gen_plot(x, y, z)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x,y,z)
+    plt.show()

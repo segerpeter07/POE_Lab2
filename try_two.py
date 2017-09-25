@@ -17,7 +17,7 @@ while(run):
             while(reading):
                 data = cxn.readline().split()
                 print(data)
-                file = open('image', 'a')
+                file = open('try2', 'a')
                 file.write(str(data)+"\n")
 
     except ValueError:
